@@ -9,6 +9,8 @@ from zoneinfo import ZoneInfo   # 'Asia/Tokyo'が見つからないとエラー�
 from .day_of_week import DayOfWeek as DoW
 
 class RaidSchedule(dict):
+    """! レイドスケジュールクラス
+    """
     def __init__(self):
         super().__init__(self)
         tz_Tokyo = ZoneInfo('Asia/Tokyo')

@@ -1,9 +1,10 @@
 """!@package BPレイド通知モジュール
 Blue Protocol用レイド通知Botのメインモジュール
 @note created by https://twitter.com/MatchaMiG
-@date 2023.10.01
+@date 2023.10.05
 """
-from . import raid_schedule   # レイド時刻の設定
+from .raid_schedule import *   # レイド時刻の設定
+from .notify_msg import *   
 
 from os import getenv
 from .my_lib.ctrl_pickle import *
@@ -20,6 +21,8 @@ from datetime import datetime as dt
 from datetime import timedelta
 from typing import Coroutine, Any
 from zoneinfo import ZoneInfo
+
+jst = ZoneInfo('Asia/Tokyo')
 
 class BPRaidNotifyClient(d_Client):
     """! Blue Protocolレイド通知クラス
@@ -67,11 +70,11 @@ class BPRaidNotifyClient(d_Client):
 
 # グローバル変数宣言
 g_client = BPRaidNotifyClient(intents=Intents.default())    # Discord botクライアント
-g_last_updated_date = dt.now(ZoneInfo('Asia/Tokyo')).date() # レイド通知辞書の最終更新日付
+g_last_updated_date = dt.now(jst).date()                    # レイド通知辞書の最終更新日付
 g_raid_ts_dict = dict()                                     # レイド通知辞書
 
 @g_client.tree.command()
-async def add_raid_notification(
+async def set_raid_notification(
     ctx: Interaction,
     offset: d_Range[int, -60, 60],
     role: d_Role = None,
@@ -98,12 +101,12 @@ async def add_raid_notification(
     g_client.raid_notification_ch_dict.update(new_dict)
 
     dump_pickle(g_client.raid_notification_ch_save_path, g_client.raid_notification_ch_dict)    # 辞書を.pickleに保存
-    update_raid_ts_dict(dt.now(), new_dict)
+    update_raid_ts_dict(dt.now(jst), new_dict)
 
     await ctx.response.send_message(msg)
 
 @g_client.tree.command()
-async def del_raid_notification(ctx: Interaction) -> None:
+async def unset_raid_notification(ctx: Interaction) -> None:
     """! レイド通知解除関数
     本コマンドを実行したチャンネルをレイド通知対象から削除
     @param None
@@ -123,21 +126,18 @@ def update_raid_ts_dict(dt_: dt, cond_dict:dict) -> dict:
     @return None
     @note dt_.time以前のレイドは除外して辞書を生成
     """
-
     global g_raid_ts_dict
     dow = dt_.weekday() # 曜日取得
-    new_ts_list = [dt.combine(dt_.date(), v[1], tzinfo=ZoneInfo('Asia/Tokyo')) for v in raid_schedule.RaidSchedule().values() if dow in v[0] and dt_.time() < v[1]]    # 新通知日時リスト作成
+    today_ts_list = [dt.combine(dt_.date(), v[1], tzinfo=jst) for v in RaidSchedule().values() if dow in v[0]]        # その日の時報日時リスト作成
 
     return_dict = dict()
-    #for d_k, d_v in g_client.raid_notification_ch_dict.items(): # レイド通知対象の情報を1つずつ読み出し
     for d_k, d_v in cond_dict.items(): # レイド通知対象の情報を1つずつ読み出し
         # 以下の辞書を作成
         # キー: 'サーバID'と'チャンネルID'
         # 値: 'オフセットを考慮した通知日時リスト'と'メンション先ロールID'
-        return_dict[d_k] = [list(map(lambda x: x - timedelta(minutes=int(d_v[0])), new_ts_list)), d_v[1]]
+        return_dict[d_k] = [[ts for ts in map(lambda x: x - timedelta(minutes=int(d_v[0])), today_ts_list) if ts > dt_], d_v[1]]
 
     g_raid_ts_dict.update(return_dict)
-
 
 async def send_notification(dt_: dt, ts_dict: dict) -> None:
     """! 時報送信関数
@@ -167,9 +167,10 @@ async def calc_Regnas_time(dt_:dt) -> None:
     現在の昼/夜を判定し、その時間帯の残り時間を算出する.これらの結果をbotのステータスに表示する.
     @param dt_: 判定する時刻
     @return None
-    @note サービスイン後の最初の昼の開始は、2023.06.14 13:37:10だとして計算.
+    @note 基準時刻は環境変数から取得
     """
-    Regnas_totalsec = int(dt_.replace(tzinfo=ZoneInfo('Asia/Tokyo')).timestamp() - 1930) % 3000  # 現在の日の時刻(累計秒)を取得
+    Regnas_basetime = int(getenv('RegnasBaseTime', 1340))
+    Regnas_totalsec = int(dt_.replace(tzinfo=jst).timestamp() - Regnas_basetime) % 3000  # 現在の日の時刻(累計秒)を取得
     m, s = divmod(int(1500-Regnas_totalsec % 1500), 60) # 残り時間(分, 秒)を算出
     if Regnas_totalsec < 1500:  # 昼
         act = Game(name=f'\N{High Brightness Symbol}昼\N{High Brightness Symbol} 残{m:02}:{s:02}')
@@ -187,7 +188,7 @@ async def measure_time() -> None:
     """
     global g_last_updated_date
     global g_raid_ts_dict
-    now = dt.now(ZoneInfo('Asia/Tokyo'))
+    now = dt.now(jst)
     await calc_Regnas_time(now)
     if (measure_time.current_loop == 0) or (g_last_updated_date < now.date()):
         update_raid_ts_dict(now, g_client.raid_notification_ch_dict)    # レイド時報リスト更新
@@ -203,9 +204,8 @@ async def time_set() -> None:
     @return None
     """
     # mm:00に開始するための時刻合わせ
-    now = dt.now(ZoneInfo('Asia/Tokyo'))
+    now = dt.now(jst)
     wait_time = 60.0 - now.second   # 時刻合わせ計算
     await sleep_async(wait_time)    # 時刻合わせ待機
-
 
 g_client.run(token=getenv('Token'))
