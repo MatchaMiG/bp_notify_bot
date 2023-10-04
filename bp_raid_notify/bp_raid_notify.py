@@ -3,11 +3,10 @@ Blue Protocol用レイド通知Botのメインモジュール
 @note created by https://twitter.com/MatchaMiG
 @date 2023.10.01
 """
-from . import settings          # 通知時刻等の設定
+from . import raid_schedule   # レイド時刻の設定
 
 from os import getenv
-from os.path import isfile
-import pickle
+from .my_lib.ctrl_pickle import *
 
 from discord import Client as d_Client
 from discord import Role as d_Role
@@ -21,28 +20,6 @@ from datetime import datetime as dt
 from datetime import timedelta
 from typing import Coroutine, Any
 from zoneinfo import ZoneInfo
-
-def get_pickle(path: str, default_val: Any) -> dict:
-    """! 通知チャンネル情報を外部ファイル(.pickle)から取得する
-    @param path: .pickleファイルまでのパス
-    @param default_val: .pickleファイルがなかった場合の返戻値
-    @return 外部ファイルがある場合: 外部ファイルから取得したデータ
-    @return 外部ファイルがない場合: default_val
-    """
-    if isfile(path):                     # ファイルがある場合
-        with open(path, mode='rb') as f: # ファイルオープン
-            return pickle.load(f)        # ファイルを読み込んで返戻
-    else:                       # ファイルがない場合
-        return default_val      # 引数のデフォルト値を返戻
-    
-def save_pickle(path: str, var: Any) -> None:
-    """! 通知チャンネル情報を外部ファイル(RaidNotify)に保存する
-    @param path: .pickleファイルまでのパス
-    @param var: 保存する変数
-    @return None
-    """
-    with open(path, mode='wb+') as f:   # ファイルオープン ※ファイルがない場合は作成
-        pickle.dump(var, f)             # ファイルに書き込み
 
 class BPRaidNotifyClient(d_Client):
     """! Blue Protocolレイド通知クラス
@@ -58,8 +35,8 @@ class BPRaidNotifyClient(d_Client):
         # self.cycle_notification_ch_save_path = getenv('CycleNotify')    # 昼夜サイクル通知対象チャンネル保存ファイルパス(未使用)
 
         # 通知対象辞書取得
-        self.raid_notification_ch_dict = get_pickle(self.raid_notification_ch_save_path, dict())    # レイド通知対象チャンネル辞書取得
-        # self.cycle_notification_ch_dict = get_pickle(self.cycle_notification_ch_save_path, dict())  # 昼夜サイクル通知対象チャンネル辞書取得(未使用)
+        self.raid_notification_ch_dict = load_pickle(self.raid_notification_ch_save_path, dict())    # レイド通知対象チャンネル辞書取得
+        # self.cycle_notification_ch_dict = load_pickle(self.cycle_notification_ch_save_path, dict())  # 昼夜サイクル通知対象チャンネル辞書取得(未使用)
 
         super().__init__(intents=intents)    # Discord botオブジェクト生成
         self.tree = CommandTree(self)   # コマンドツリーオブジェクト生成
@@ -120,7 +97,7 @@ async def add_raid_notification(
     new_dict = {(ctx.guild_id, ctx.channel_id): new_list}
     g_client.raid_notification_ch_dict.update(new_dict)
 
-    save_pickle(g_client.raid_notification_ch_save_path, g_client.raid_notification_ch_dict)    # 辞書を.pickleに保存
+    dump_pickle(g_client.raid_notification_ch_save_path, g_client.raid_notification_ch_dict)    # 辞書を.pickleに保存
     update_raid_ts_dict(dt.now(), new_dict)
 
     await ctx.response.send_message(msg)
@@ -138,18 +115,18 @@ async def del_raid_notification(ctx: Interaction) -> None:
         global g_raid_ts_dict
         await ctx.response.send_message('【通知】このチャンネルをレイド通知対象から解除しました') 
         g_raid_ts_dict.pop((ctx.guild_id, ctx.channel_id), None)    # レイド時報辞書から該当データを削除
-    save_pickle(g_client.raid_notification_ch_save_path, g_client.raid_notification_ch_dict)    # 辞書を.pickleに保存
+    dump_pickle(g_client.raid_notification_ch_save_path, g_client.raid_notification_ch_dict)    # 辞書を.pickleに保存
 
 def update_raid_ts_dict(dt_: dt, cond_dict:dict) -> dict:
     """! レイド時報辞書更新関数
     @param datetime: 日時
-    @return 更新したレイド時報辞書
+    @return None
     @note dt_.time以前のレイドは除外して辞書を生成
     """
-    #global g_client
+
     global g_raid_ts_dict
     dow = dt_.weekday() # 曜日取得
-    new_ts_list = [dt.combine(dt_.date(), v[1], tzinfo=ZoneInfo('Asia/Tokyo')) for v in settings.RaidSchedule().values() if dow in v[0] and dt_.time() < v[1]]    # 新通知日時リスト作成
+    new_ts_list = [dt.combine(dt_.date(), v[1], tzinfo=ZoneInfo('Asia/Tokyo')) for v in raid_schedule.RaidSchedule().values() if dow in v[0] and dt_.time() < v[1]]    # 新通知日時リスト作成
 
     return_dict = dict()
     #for d_k, d_v in g_client.raid_notification_ch_dict.items(): # レイド通知対象の情報を1つずつ読み出し
@@ -160,7 +137,7 @@ def update_raid_ts_dict(dt_: dt, cond_dict:dict) -> dict:
         return_dict[d_k] = [list(map(lambda x: x - timedelta(minutes=int(d_v[0])), new_ts_list)), d_v[1]]
 
     g_raid_ts_dict.update(return_dict)
-    #return return_dict  # 作成した辞書を返戻
+
 
 async def send_notification(dt_: dt, ts_dict: dict) -> None:
     """! 時報送信関数
