@@ -160,7 +160,7 @@ def update_raid_ts_dict(dt_: dt, cond_dict:dict) -> dict:
         # 以下の辞書を作成
         # キー: 'サーバID'と'チャンネルID'
         # 値: 'オフセットを考慮した通知日時リスト', 'here通知設定', 'メンション先ロールID', 'メッセージタイプ'
-        return_dict[d_k] = {'ts_list': [ts for ts in map(lambda x: x - timedelta(minutes=int(d_v['offset'])), today_ts_list) if ts > dt_], 'here': d_v['here'], 'role': d_v['role'], 'type': d_v['type']}
+        return_dict[d_k] = {'ts_list': [ts for ts in map(lambda x: x - timedelta(minutes=int(d_v.get('offset', 0))), today_ts_list) if ts > dt_], 'here': d_v['here'], 'role': d_v['role'], 'type': d_v['type']}
 
     g_raid_ts_dict.update(return_dict)
 
@@ -173,10 +173,11 @@ async def send_notification(dt_: dt, ts_dict: dict) -> None:
     """
     global g_client
     tmp_raid_list = getenv('NowRaid').strip().split(',')
-    raid_info_list = [ri for _, ri in RaidInfo if any(ri.mission_name == tr for tr in tmp_raid_list)]
+    raid_info_list = [ri for ri in RaidInfo if any(ri.mission_name == tr for tr in tmp_raid_list)]
 
     for d_k, d_v in ts_dict.items():
         if any(d < dt_ for d in d_v['ts_list']):
+            print(d_v)
             ch = g_client.get_channel(int(d_k[1]))
             msg_type = int(d_v['type'])
             if d_v['role'] is not None: # メンション指定がある場合
