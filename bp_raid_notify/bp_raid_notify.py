@@ -179,11 +179,11 @@ async def send_notification(dt_: dt, ts_dict: dict) -> None:
 
     for d_k, d_v in ts_dict.items():
         if any(d < dt_ for d in d_v['ts_list']):
-            print(d_v)
             ch = g_client.get_channel(int(d_k[1]))
+            msg = ''
             msg_type = int(d_v['type'])
             if d_v['role'] is not None: # メンション指定がある場合
-                msg = d_v['role']       # メッセージにメンションを追加
+                msg += d_v['role']       # メッセージにメンションを追加
             msg += '\n【時報】' + NotifyMsg.get_from_val(msg_type).msg + '\n'    # 時報メッセージ追加
 
             # レイド情報追加
