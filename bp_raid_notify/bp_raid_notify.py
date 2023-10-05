@@ -174,7 +174,7 @@ async def send_notification(dt_: dt, ts_dict: dict) -> None:
     @return None
     """
     global g_client
-    tmp_raid_list = getenv('NowRaid').strip().split(',')
+    tmp_raid_list = getenv('NowRaid').replace(' ', '').replace('　', '').split(',')
     raid_info_list = [ri for ri in RaidInfo if any(ri.mission_name == tr for tr in tmp_raid_list)]
 
     for d_k, d_v in ts_dict.items():
@@ -182,13 +182,15 @@ async def send_notification(dt_: dt, ts_dict: dict) -> None:
             ch = g_client.get_channel(int(d_k[1]))
             msg = ''
             msg_type = int(d_v['type'])
+            if d_v['here']:
+                msg += '@here'
             if d_v['role'] is not None: # メンション指定がある場合
                 msg += d_v['role']       # メッセージにメンションを追加
             msg += '\n【時報】' + NotifyMsg.get_from_val(msg_type).msg + '\n'    # 時報メッセージ追加
 
             # レイド情報追加
-            for name, portal in raid_info_list:
-                msg += f'\n【{name}】 {portal}'
+            for ri in raid_info_list:
+                msg += f'\n【{ri.mission_name}】 {ri.portal}'
             
             # 時報送信
             await ch.send(msg)
