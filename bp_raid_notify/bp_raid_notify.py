@@ -11,7 +11,7 @@ from .my_lib.ctrl_pickle import *
 
 from discord import Client as d_Client
 from discord import Role as d_Role
-from discord import Intents, Interaction, Game, ActivityType
+from discord import Intents, Interaction, Message, Game
 from discord.app_commands import CommandTree
 from discord.app_commands import Range as d_Range
 from discord.ext import tasks
@@ -77,7 +77,9 @@ g_raid_ts_dict = dict()                                     # レイド通知辞
 async def set_raid_notification(
     ctx: Interaction,
     offset: d_Range[int, -60, 60],
+    here: bool = False,
     role: d_Role = None,
+    type: d_Range[int, 0] = 0,
     ) -> None:
     """! レイド通知追加関数
     本コマンドを実行したチャンネルをレイド通知対象として追加. メンション先ロール指定があった場合は、通知時に指定ロールにメンションする
@@ -85,19 +87,42 @@ async def set_raid_notification(
     @param role: 通知時のメンション先(optional)
     @return None
     """
+    # 通知メッセージ作成
     msg = '【通知】このチャンネルをレイド通知対象に追加しました'
+    # オフセット
     if offset < 0:  # オフセットの値が負
         msg += f'\nオフセット: {-1*offset}分後'
     else:           # オフセットの値が非負
         msg += f'\nオフセット: {offset}分前'
 
+    # @here通知
+    if here:    # True
+        msg += '\nhere通知: ON'
+    else:
+        msg += '\nhere通知: OFF'
+
+    # 通知ロール
     if role is None:
-        new_list = [offset, None]    # 追加するキーと値をまとめたリストを作成
+        set_role = None
         msg += '\nメンション: なし'
     else:
-        new_list = [offset, role.id] # 追加するキーと値をまとめたリストを作成
-        msg += f'\nメンション: {role.mention}'
-    new_dict = {(ctx.guild_id, ctx.channel_id): new_list}
+        if role.name == "@everyone":
+            set_role = "@everyone"
+        else:
+            set_role = role.mention
+        msg += f'\nメンション: {set_role}'
+
+    # メッセージタイプ
+    msg += '\nメッセージタイプ: '
+    if not any(type == nm.val for _, nm in NotifyMsg):  # 選択したメッセージタイプがない場合
+        type = 0    # メッセージタイプを0に設定
+        msg += '不正な値 - タイプ0に設定 > '
+
+    msg += f'{NotifyMsg[type].jp_name}\n例: {NotifyMsg[type].msg}'
+
+
+    # 新規辞書を作成 offset: int, here: bool, role: str, type: int
+    new_dict = {(ctx.guild_id, ctx.channel_id): {'offset': offset, 'here': here, 'role': set_role, 'type': type}}
     g_client.raid_notification_ch_dict.update(new_dict)
 
     dump_pickle(g_client.raid_notification_ch_save_path, g_client.raid_notification_ch_dict)    # 辞書を.pickleに保存
@@ -134,8 +159,8 @@ def update_raid_ts_dict(dt_: dt, cond_dict:dict) -> dict:
     for d_k, d_v in cond_dict.items(): # レイド通知対象の情報を1つずつ読み出し
         # 以下の辞書を作成
         # キー: 'サーバID'と'チャンネルID'
-        # 値: 'オフセットを考慮した通知日時リスト'と'メンション先ロールID'
-        return_dict[d_k] = [[ts for ts in map(lambda x: x - timedelta(minutes=int(d_v[0])), today_ts_list) if ts > dt_], d_v[1]]
+        # 値: 'オフセットを考慮した通知日時リスト', 'here通知設定', 'メンション先ロールID', 'メッセージタイプ'
+        return_dict[d_k] = {'ts_list': [ts for ts in map(lambda x: x - timedelta(minutes=int(d_v['offset'])), today_ts_list) if ts > dt_], 'here': d_v['here'], 'role': d_v['role'], 'type': d_v['type']}
 
     g_raid_ts_dict.update(return_dict)
 
@@ -147,20 +172,25 @@ async def send_notification(dt_: dt, ts_dict: dict) -> None:
     @return None
     """
     global g_client
+    tmp_raid_list = getenv('NowRaid').strip().split(',')
+    raid_info_list = [ri for _, ri in RaidInfo if any(ri.mission_name == tr for tr in tmp_raid_list)]
 
     for d_k, d_v in ts_dict.items():
-        if any(d < dt_ for d in d_v[0]):
+        if any(d < dt_ for d in d_v['ts_list']):
             ch = g_client.get_channel(int(d_k[1]))
-            if d_v[1] is None:  # メンション指定がない場合
-                await ch.send(f'【時報】レイド')
-            else:               # メンション指定がある場合
-                try:
-                    role = g_client.get_guild(int(d_k[0])).get_role(int(d_v[1]))    # メンション取得
-                    await ch.send(f'{role.mention}\n【時報】レイド')
-                except:
-                    await ch.send(f'※メンション取得に失敗しました\n【時報】レイド')
+            msg_type = int(d_v['type'])
+            if d_v['role'] is not None: # メンション指定がある場合
+                msg = d_v['role']       # メッセージにメンションを追加
+            msg += '\n【時報】' + NotifyMsg[msg_type].msg + '\n'    # 時報メッセージ追加
 
-            ts_dict[d_k][0] = [d for d in d_v[0] if dt_ < d]    # 日時リストを更新(通知済みの要素を除外)
+            # レイド情報追加
+            for name, portal in raid_info_list:
+                msg += f'\n【{name}】 {portal}'
+            
+            # 時報送信
+            await ch.send(msg)
+
+            ts_dict[d_k]['ts_list'] = [d for d in d_v['ts_list'] if dt_ < d]    # 日時リストを更新(通知済みの要素を除外)
 
 async def calc_Regnas_time(dt_:dt) -> None:
     """! レグナス時間計算関数
