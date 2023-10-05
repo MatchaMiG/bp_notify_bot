@@ -114,11 +114,13 @@ async def set_raid_notification(
 
     # メッセージタイプ
     msg += '\nメッセージタイプ: '
-    if not any(type == nm.val for _, nm in NotifyMsg):  # 選択したメッセージタイプがない場合
+
+    if not any(type == nm.val for nm in NotifyMsg):  # 選択したメッセージタイプがない場合
         type = 0    # メッセージタイプを0に設定
         msg += '不正な値 - タイプ0に設定 > '
-
-    msg += f'{NotifyMsg[type].jp_name}\n例: {NotifyMsg[type].msg}'
+    
+    tgt_nm = NotifyMsg.get_from_val(type)
+    msg += f'{tgt_nm.jp_name}\n例: {tgt_nm.msg}'
 
 
     # 新規辞書を作成 offset: int, here: bool, role: str, type: int
@@ -182,7 +184,7 @@ async def send_notification(dt_: dt, ts_dict: dict) -> None:
             msg_type = int(d_v['type'])
             if d_v['role'] is not None: # メンション指定がある場合
                 msg = d_v['role']       # メッセージにメンションを追加
-            msg += '\n【時報】' + NotifyMsg[msg_type].msg + '\n'    # 時報メッセージ追加
+            msg += '\n【時報】' + NotifyMsg.get_from_val(msg_type).msg + '\n'    # 時報メッセージ追加
 
             # レイド情報追加
             for name, portal in raid_info_list:

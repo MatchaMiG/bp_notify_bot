@@ -23,6 +23,17 @@ class NotifyMsg (Enum):
         self.jp_name = jp_name
         self.msg = msg
 
+    @classmethod
+    def get_from_val(cls, tgt_val: int) -> Enum:
+        """! 整数値から該当情報を取得するメソッド
+        @param tgt_val: 対象値
+        @return 該当する情報の辞書
+        """
+        for c in cls:
+            if c.val == tgt_val:
+                return c
+        return c
+
 class RaidInfo (Enum):
     """! レイド情報列挙型クラス
     """
