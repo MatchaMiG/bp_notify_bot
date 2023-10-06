@@ -65,7 +65,7 @@ class BPRaidNotifyClient(d_Client):
         @param None
         @return None
         """
-        await self.change_presence(activity=Game(name='\N{rooster} 準備中 \N{rooster}'))
+        #await self.change_presence(activity=Game(name='\N{rooster} 準備中 \N{rooster}'))
         measure_time.start()    # 時刻計測開始
 
 # グローバル変数宣言
@@ -224,7 +224,7 @@ async def measure_time() -> None:
     global g_last_updated_date
     global g_raid_ts_dict
     now = dt.now(jst)
-    await calc_Regnas_time(now)
+    #await calc_Regnas_time(now)
     if (measure_time.current_loop == 0) or (g_last_updated_date < now.date()):
         update_raid_ts_dict(now, g_client.raid_notification_ch_dict)    # レイド時報リスト更新
         g_last_updated_date = now.date()    # 時報リスト更新日時の更新
