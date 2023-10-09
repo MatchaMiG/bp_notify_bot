@@ -130,7 +130,7 @@ async def set_raid_notification(
     dump_pickle(g_client.raid_notification_ch_save_path, g_client.raid_notification_ch_dict)    # 辞書を.pickleに保存
     update_raid_ts_dict(dt.now(jst), new_dict)
 
-    await ctx.response.send_message(msg)
+    await ctx.response.send_message(msg, silent=True)
 
 @g_client.tree.command()
 async def unset_raid_notification(ctx: Interaction) -> None:
@@ -140,10 +140,10 @@ async def unset_raid_notification(ctx: Interaction) -> None:
     @return None
     """
     if g_client.raid_notification_ch_dict.pop((ctx.guild_id, ctx.channel_id), None) is None:  # 辞書に入っていない場合
-        await ctx.response.send_message('【通知】このチャンネルはレイド通知対象に入っていません')
+        await ctx.response.send_message('【通知】このチャンネルはレイド通知対象に入っていません', silent=True)
     else:   # 辞書に入っている場合
         global g_raid_ts_dict
-        await ctx.response.send_message('【通知】このチャンネルをレイド通知対象から解除しました') 
+        await ctx.response.send_message('【通知】このチャンネルをレイド通知対象から解除しました', silent=True) 
         g_raid_ts_dict.pop((ctx.guild_id, ctx.channel_id), None)    # レイド時報辞書から該当データを削除
     dump_pickle(g_client.raid_notification_ch_save_path, g_client.raid_notification_ch_dict)    # 辞書を.pickleに保存
 
@@ -180,12 +180,11 @@ async def send_notification(dt_: dt, ts_dict: dict) -> None:
     for d_k, d_v in ts_dict.items():
         if any(d < dt_ for d in d_v['ts_list']):
             ch = g_client.get_channel(int(d_k[1]))
-            msg = ''
             msg_type = int(d_v['type'])
             if d_v['here']:
                 msg += '@here'
             if d_v['role'] is not None: # メンション指定がある場合
-                msg += d_v['role']       # メッセージにメンションを追加
+                msg += d_v['role']      # メッセージにメンションを追加
             msg += '\n【時報】' + NotifyMsg.get_from_val(msg_type).msg + '\n'    # 時報メッセージ追加
 
             # レイド情報追加
