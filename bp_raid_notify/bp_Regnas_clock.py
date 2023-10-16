@@ -1,7 +1,7 @@
 """! レグナス時計モジュール
 Blue Protocol通知Bot向け_レグナス時計モジュール
 @note created by https://twitter.com/MatchaMiG
-@date 2023.10.14
+@date 2023.10.17
 """
 from .my_lib.ctrl_pickle import *
 
@@ -19,14 +19,15 @@ from zoneinfo import ZoneInfo
 jst = ZoneInfo('Asia/Tokyo')
 
 class ClockNotifyMsg (Enum):
-    """! 時報通知メッセージ列挙型クラス
+    """! レグナス時計通知メッセージ列挙型クラス
     """
     Simple = (0, "シンプル", "時間帯移行 夜 > 昼", "時間帯移行 昼 > 夜")
     GuildMarm = (1, "受付嬢", "まもなく時間帯が昼になります。", "まもなく時間帯が夜になります。")
     Noble = (2, "御令嬢", "昼になりますわ～～～！！", "夜になりますわ～～～！！")
     Chicken = (2816, "ニワトリ", "ｹｹｺｺｹｯｹｺｹｹｺｯｹｺｯｺｺｯｹｹｯ", "ｹｹｯｹｺｹｹｺｯｹｺｯｺｺｯｹｹｯ")
+
     def __init__(self, val: int, jp_name: str, day_msg: str, night_msg: str) -> None:
-        """! 時報通知メッセージ列挙型クラスのコンストラクタ
+        """! レグナス時計通知メッセージ列挙型クラスのコンストラクタ
         @param val: int値
         @param jp_name: 日本語名
         @param day_msg: 昼に切り替わる際の通知メッセージ
@@ -85,28 +86,29 @@ class RegnasClock:
         """
         return dt(2023, 6, 14, 9, 0, 0, tzinfo=jst)
 
-    def update_dt_dict(self, upd_dt: dt, replace: bool = False) -> None:
+    def update_dt_dict(self, upd_dt: dt, overwrite: bool = False) -> None:
         """! 通知日時辞書の更新
         通知日時辞書を更新する
-        @param datetime: 日時
-        @param bool: 入れ替えフラグ
+        @param upd_dt: 更新日時
+        @param overwrite: 入れ替えフラグ
         @return None
         @note upd_dt以前の通知は除外して辞書を生成
-        @note replaceフラグがTrueの場合既存の通知日時リストは削除
+        @note overwriteフラグがTrueの場合既存の通知日時リストは削除
         """
+        # 通知日時辞書の更新
         upd_dict = dict()   # 更新辞書
-        for d_k, d_v in self.notify_ch_dict.items(): # レイド通知対象の情報を1つずつ読み出し
+        for d_k, d_v in self.notify_ch_dict.items(): # レグナス時計通知対象の情報を1つずつ読み出し
             # 以下の辞書を作成
             # キー: 'サーバID'と'チャンネルID'
             # 値: 'オフセットを考慮した通知日時リスト', 'メンション', 'メッセージタイプ'
 
-            if replace: # 入れ替えフラグがTrueの場合
+            if overwrite:   # リスト上書きフラグがTrueの場合
                 ts_list = list()
-            else:
-                # 該当チャンネルの既存時報リストを取得
-                # チャンネル辞書または時報リストが未生成の場合は空リストを取得
+            else:           # リスト上書きフラグがFalseの場合
+                # 該当チャンネルの既存通知日時リストを取得
+                # チャンネル辞書または通知日時リストが未生成の場合は空リストを取得
                 ts_list = self.notify_dt_dict.get(d_k, dict()).get('ts_list', list())
-            # 既存時報リスト(または空リスト)に新規時報リストを連結
+            # 既存通知日時リスト(または空リスト)に新規通知日時リストを連結
             ts_list.extend([ts for ts in map(lambda o: self.next_switch_dt.replace(second=0, microsecond=0) - timedelta(minutes=int(o)), d_v['offset']) if upd_dt < ts])
             # 更新辞書に各値を設定
             upd_dict[d_k] = {'ts_list': ts_list, 'role': d_v['role'], 'type': d_v['type']}
@@ -115,27 +117,26 @@ class RegnasClock:
         self.notify_dt_dict.update(upd_dict)
 
     async def send_notification(self, snd_dt: dt) -> None:
-        """! 時報送信関数
-        
-        @param datetime: 日時
-        @param ts_dict: 時報辞書
+        """! 通知送信関数
+        @param datetime: 送信日時
         @return None
         """
-        for d_k, d_v in self.notify_dt_dict.items():
-            if any(d < snd_dt for d in d_v['ts_list']):
-                ch = self.client.get_channel(int(d_k[1]))
-                msg_type = int(d_v['type'])
+        for d_k, d_v in self.notify_dt_dict.items():        # 通知日時辞書を順番に処理
+            if any(d < snd_dt for d in d_v['ts_list']):     # 送信日時以前の通知日時がある場合
+                ch = self.client.get_channel(int(d_k[1]))   # 通知先チャンネルを取得
 
                 # メッセージにメンションを追加
-                if msg := d_v['role']:  # メンションがある場合
-                    msg += '\n'         # メッセージに改行を追加
+                if msg := d_v['role']:          # メンションがある場合
+                    msg += '\n'                 # メッセージに改行を追加
+
+                msg_type = int(d_v['type'])     # メッセージタイプを取得
 
                 if self.last_period == RegnasTimePeriod.Night:  # 現在夜 → 次は昼
-                    msg += '【通知】' + ClockNotifyMsg.get_from_val(msg_type).day_msg     # 昼切替の通知メッセージ追加
+                    msg += '【時計】' + ClockNotifyMsg.get_from_val(msg_type).day_msg     # 昼切替の通知メッセージ追加
                 elif self.last_period == RegnasTimePeriod.Day:  # 現在昼 → 次は夜
-                    msg += '【通知】' + ClockNotifyMsg.get_from_val(msg_type).night_msg   # 夜切替の通知メッセージ追加
+                    msg += '【時計】' + ClockNotifyMsg.get_from_val(msg_type).night_msg   # 夜切替の通知メッセージ追加
 
-                # 時報送信
+                # 通知送信
                 await ch.send(msg)
 
                 self.notify_dt_dict[d_k]['ts_list'] = [d for d in d_v['ts_list'] if snd_dt < d]    # 通知日時リストを更新(通知済みの要素を除外)
@@ -195,7 +196,7 @@ class RegnasClock:
 
         await self.client.change_presence(activity=act) # Botのアクティビティを変更
 
-    @tasks.loop(seconds=10)
+    @tasks.loop(seconds=15)
     async def measure_time(self) -> None:
         """! 時刻計測関数
         30秒ごとに時刻を計測し、各レグナス時計処理関数を呼び出す.
@@ -204,15 +205,15 @@ class RegnasClock:
         """
         now_dt = dt.now(jst)    # 現在日時(JST)
 
-        # メッセージ送信
-        # note: self.last_period変更後だと、切替日時ちょうどの通知の際にメッセージが逆になるため先に配置
+        # 通知送信
+        # note: self.last_period変更後に送信する場合、切替日時ちょうどの通知時にメッセージが不適切になるため前に配置
         await self.send_notification(now_dt)
 
         now_period, start_dt, end_dt = self.calc_Regnas_time(now_dt)    # レグナス時間を計算
         if now_period != self.last_period:                              # 計算した時間帯 と 最新の時間帯が異なる場合
             self.next_switch_dt = end_dt                                # 次の切替時刻を新しく算出した終了時刻に設定
             await self.apply_Regnas_clock(now_period, start_dt, end_dt) # レグナス時計をステータスに反映
-            self.update_dt_dict(now_dt)                               # 通知日時辞書を更新
+            self.update_dt_dict(now_dt)                                 # 通知日時辞書を更新
             self.last_period = now_period                               # 最新の時間帯を 新しく算出した時間帯に変更
 
         

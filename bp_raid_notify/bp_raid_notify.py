@@ -1,7 +1,7 @@
 """!@package BPレイド通知モジュール
 Blue Protocol通知Bot向け_レイド通知モジュール
 @note created by https://twitter.com/MatchaMiG
-@date 2023.10.14
+@date 2023.10.17
 """
 from .my_lib.ctrl_pickle import *
 from .my_lib.day_of_week import DayOfWeek as DoW
@@ -30,7 +30,7 @@ class RaidInfo (Enum):
     EarthDemiDragon = ('虚空の浮島・土竜襲来', 'バハマール高原・神の見守る丘')
     ThunderDemiDragon = ('虚空の浮島・雷竜襲来', 'モンテノール渓谷・リッツェ交易街道')
     
-    #SnadWarm = ('騒嵐の大地・砂蟲侵出', '未確認')
+    #SandWarm = ('騒嵐の大地・砂蟲侵出', '未確認')
     #OriginDemiDragon = ('虚空の浮島・原竜襲来', '未確認')
     def __init__(self, mission_name: str, portal: str) -> None:
         """! レイド情報列挙型クラスのコンストラクタ
@@ -46,8 +46,10 @@ class RaidNotifyMsg (Enum):
     """! 時報通知メッセージ列挙型クラス
     """
     Simple = (0, "シンプル", "レイド開催")
-    GuildMarm = (1, "受付嬢", "虚空の浮島にてデミドラゴンの出現が確認されました。\n星脈孔に向かい討伐任務に参加してください。")
-    #Noble = (2, ["Noble", "ご令嬢"])
+    GuildMarm = (1, "受付嬢", "大型エネミーの出現が確認されました。\n星脈孔に向かい討伐任務に参加してください。")
+    Noble = (2, "御令嬢", "大型エネミーが出現しましてよ～～！\n冒険者の皆様はご討伐くださいませ～～！！")
+    Chicken = (2816, "ニワトリ", "ｺｹｺｺｺｯｺｹｺｺｺｯｺｹｺｺｯｺｺｯｹｺｯｹｺｹｹｹｯｹｹｺｹｯｺｺｹｺｹｯｺｹｹｺｹｯｺｹｺｺｯｺｺｯｹｹｺｹｺｯｺｹｹｺｯｹｺｹｹｯｺｺｯｺｹｺｹｺｯ")
+
     def __init__(self, val: int, jp_name: str, msg: str) -> None:
         """! 時報通知メッセージ列挙型クラスのコンストラクタ
         @param val: int値
@@ -94,76 +96,96 @@ class BPRaidNotify:
     def __init__(self, client: d_Client):
         """! コンストラクタ
         """
-        self.client = client
-        self.pickle_path = getenv('RaidNotifyCh')
-        self.notify_ch_dict = load_pickle(self.pickle_path, dict())
-        self.last_dict_updated = dt.now(jst)
-        self.notify_dt_dict = dict()
-        self.update_time_dict(self.last_dict_updated, self.notify_ch_dict)
+        self.client = client                        # Discord botクライアント(呼出元のインスタンス)
+        self.last_dict_updated = dt.now(jst)        # 通知日時辞書の最新更新日時
+        self.pickle_path = getenv('RaidNotifyCh')   # pickle保存パス
+        self.notify_ch_dict = load_pickle(self.pickle_path, dict()) # 通知チャンネル辞書
+        self.notify_dt_dict = dict()                                # 通知日時辞書
 
-    def update_time_dict(self, dt_: dt, cond_dict: dict) -> None:
-        """! 時報辞書更新関数
-        @param datetime: 日時
-        @param cond_dict: 通知条件辞書
+        self.update_dt_dict(self.last_dict_updated)
+
+    def update_dt_dict(self, upd_dt: dt, overwrite: bool = False) -> None:
+        """! 通知日時辞書の更新
+        通知日時辞書を更新する
+        @param upd_dt: 更新日時
+        @param overwrite: リスト上書きフラグ
         @return None
-        @note dt_.time以前のレイドは除外して辞書を生成
+        @note upd_dt以前の通知は除外して辞書を生成
+        @note overwriteフラグがTrueの場合既存の通知日時リストは削除
         """
-        dow = dt_.weekday() # 曜日取得
-        ts_list = [dt.combine(dt_.date(), v[1], tzinfo=jst) for v in RaidSchedule().values() if dow in v[0]]    # 時報日時リスト作成
+        # 通知日時リスト作成
+        dow = upd_dt.weekday() # 曜日取得
+        ts_list = [dt.combine(upd_dt.date(), v[1], tzinfo=jst) for v in RaidSchedule().values() if dow in v[0]] # 時報日時リスト作成
         
-        tommorow_1st_time = min([v[1] for v in RaidSchedule().values() if ((dow + 1) % 7) in v[0]])       # 翌日最初の時報時刻を取得
-        tommorow_1st_ts = dt.combine(dt_.date(), tommorow_1st_time, tzinfo=jst) + timedelta(days=1)     # 翌日最初の時報日時を取得
-        ts_list.append(tommorow_1st_ts)     # 時報日時リストに翌日最初の時報日時を追加
+        tommorow_1st_time = min([v[1] for v in RaidSchedule().values() if ((dow + 1) % 7) in v[0]])             # 翌日最初の時報時刻を取得
+        tommorow_1st_ts = dt.combine(upd_dt.date(), tommorow_1st_time, tzinfo=jst) + timedelta(days=1)          # 翌日最初の時報日時を取得
+        ts_list.append(tommorow_1st_ts)                                                                         # 通知日時リストに翌日最初の通知日時を追加
 
-        return_dict = dict()
-        for d_k, d_v in cond_dict.items(): # レイド通知対象の情報を1つずつ読み出し
+        # 通知日時辞書の更新
+        upd_dict = dict()   # 更新辞書
+        for d_k, d_v in self.notify_ch_dict.items(): # レイド通知対象の情報を1つずつ読み出し
             # 以下の辞書を作成
             # キー: 'サーバID'と'チャンネルID'
-            # 値: 'オフセットを考慮した通知日時リスト', 'here通知設定', 'メンション先ロールID', 'メッセージタイプ'
-            new_ts_list = return_dict[d_k]['ts_list'].extend([ts for o in d_v['offset'] for ts in map(lambda x: x - timedelta(minutes=int(o)), ts_list) if ts > dt_])
-            return_dict[d_k] = {'ts_list': new_ts_list, 'role': d_v['role'], 'type': d_v['type']}
+            # 値: 'オフセットを考慮した通知日時リスト', 'メンション', 'メッセージタイプ'
 
-        self.notify_dt_dict.update(return_dict)
+            if overwrite:   # リスト上書きフラグがTrueの場合
+                ts_list = list()
+            else:           # リスト上書きフラグがFalseの場合
+                # 該当チャンネルの既存通知日時リストを取得
+                # チャンネル辞書または通知日時リストが未生成の場合は空リストを取得
+                ts_list = self.notify_dt_dict.get(d_k, dict()).get('ts_list', list())
+            # 既存通知日時リスト(または空リスト)に新規通知日時リストを連結
+            ts_list.extend([ts for o in d_v['offset'] for ts in map(lambda x: x - timedelta(minutes=int(o)), ts_list) if upd_dt < ts])
+            # 更新辞書に各値を設定
+            upd_dict[d_k] = {'ts_list': ts_list, 'role': d_v['role'], 'type': d_v['type']}
 
-    async def send_notification(self, dt_: dt, ts_dict: dict) -> None:
-        """! 時報送信関数
-        
-        @param datetime: 日時
-        @param ts_dict: 時報辞書
+        # 通知日時辞書を更新辞書で更新
+        self.notify_dt_dict.update(upd_dict)
+
+    async def send_notification(self, snd_dt: dt) -> None:
+        """! 通知送信関数
+        @param snd_dt: 送信日時
         @return None
         """
-        tmp_raid_list = getenv('NowRaid').replace(' ', '').replace('　', '').split(',')
-        raid_info_list = [ri for ri in RaidInfo if ri.mission_name in tmp_raid_list]
+        # 開催中のレイドを環境変数より取得
+        tmp_raid_list = getenv('NowRaid').replace(' ', '').replace('　', '').split(',') # 区切り文字で分割しリスト化(スペースは削除)
+        raid_info_list = [ri for ri in RaidInfo if ri.mission_name in tmp_raid_list]    # 該当するレイド情報があるもののみ抽出しリスト化
 
-        for d_k, d_v in ts_dict.items():
-            if any(d < dt_ for d in d_v['ts_list']):
-                ch = self.client.get_channel(int(d_k[1]))
-                msg_type = int(d_v['type'])
-                #if d_v['role'] is not None: # メンション指定がある場合
-                msg = d_v['role']      # メッセージにメンションを追加
-                msg += '\n【時報】' + RaidNotifyMsg.get_from_val(msg_type).msg + '\n'    # 時報メッセージ追加
+        for d_k, d_v in self.notify_dt_dict.items():        # 通知日時辞書を順番に処理
+            if any(d < snd_dt for d in d_v['ts_list']):     # 送信日時以前の通知日時がある場合
+                ch = self.client.get_channel(int(d_k[1]))   # 通知先チャンネルを取得
+
+                # メッセージにメンションを追加
+                if msg := d_v['role']:          # メンションがある場合
+                    msg += '\n'                 # メッセージに改行を追加
+
+                msg_type = int(d_v['type'])     # メッセージタイプを取得
+                
+                msg += '\n【レイド】' + RaidNotifyMsg.get_from_val(msg_type).msg + '\n'    # 通知メッセージ追加
 
                 # レイド情報追加
-                for ri in raid_info_list:
-                    msg += f'\n【{ri.mission_name}】\n{ri.portal}'
-                # 時報送信
+                for ri in raid_info_list:   # 開催中のレイドリストを順番に処理
+                    msg += f'\n【{ri.mission_name}】\n{ri.portal}'  # 開催中のレイド情報をメッセージに追加
+
+                # 通知送信
                 await ch.send(msg)
 
-                ts_dict[d_k]['ts_list'] = [d for d in d_v['ts_list'] if dt_ < d]    # 日時リストを更新(通知済みの要素を除外)
+                self.notify_dt_dict[d_k]['ts_list'] = [d for d in d_v['ts_list'] if snd_dt < d]    # 通知日時リストを更新(通知済みの要素を除外)
 
-    @tasks.loop(seconds=30)
+    @tasks.loop(seconds=15)
     async def measure_time(self) -> None:
         """! 時刻計測関数
-        30秒ごとに時刻を計測し、各時報処理関数を呼び出す.
+        一定時間ごとに時刻を計測し、各時報処理関数を呼び出す.
         @param None
         @return None
         """
-        now_ = dt.now(jst)
-        if self.last_dict_updated.date() < now_.date():
-            self.update_time_dict(now_, self.notify_ch_dict)    # レイド時報リスト更新
-            self.last_dict_updated = now_                       # 時報リスト更新日時の更新
+        now_dt = dt.now(jst)                    # 現在日時(JST)
+        await self.send_notification(now_dt)    # 通知送信
+
+        if self.last_dict_updated.date() < now_dt.date():   # 通知日時辞書の最新更新日時が、現在日時の日付以前の場合
+            self.update_dt_dict(now_dt)       # 通知日時辞書を更新
+            self.last_dict_updated = now_dt     # 通知日時辞書の最新更新日時を現在日時に設定
         
-        await self.send_notification(now_, self.notify_dt_dict)
         
     @measure_time.before_loop
     async def time_set(self) -> None:

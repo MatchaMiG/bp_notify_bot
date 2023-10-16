@@ -1,7 +1,7 @@
 """! BP通知Botクライアント
 Blue Protocol通知Botクライアント及びスラッシュコマンド
 @note created by https://twitter.com/MatchaMiG
-@date 2023.10.16
+@date 2023.10.17
 """
 # 自作モジュール
 from .my_lib.ctrl_pickle import *
@@ -32,8 +32,8 @@ class BPNotifyClient(d_Client):
         self.raid = BPRaidNotify(self)
         self.clock = RegnasClock(self)
 
-        super().__init__(intents=intents)    # Discord botオブジェクト生成
-        self.tree = CommandTree(self)   # コマンドツリーオブジェクト生成
+        super().__init__(intents=intents)   # Discord botオブジェクト生成
+        self.tree = CommandTree(self)       # コマンドツリーオブジェクト生成
 
     def __del__(self) -> None:
         """! DiscordBotBaseクラスのデストラクタ
@@ -62,7 +62,7 @@ class BPNotifyClient(d_Client):
         self.clock.measure_time.start()
 
 # グローバル変数宣言
-g_client = BPNotifyClient(intents=Intents.default())    # Discord botクライアント
+g_client = BPNotifyClient(intents=Intents.default())    # Discord botクライアントインスタンス生成
 
 @g_client.tree.command()
 async def set_raid_notification(
@@ -71,17 +71,17 @@ async def set_raid_notification(
     mention: str = '',
     type: d_Range[int, 0] = 0,
     ) -> None:
-    """! レイド通知追加関数
-    本コマンドを実行したチャンネルをレイド通知対象として追加. メンション先ロール指定があった場合は、通知時に指定ロールにメンションする
-    @param offset: 通知時刻オフセット(分)
-    @param role: 通知時のメンション先(optional)
-    @param type: 通知時のメッセージタイプ(optional)
+    """! レイド通知チャンネル追加コマンド
+    本コマンドを実行したチャンネルをレイド通知対象として追加。メンション指定があった場合、通知時にメンションする
+    @param offset:  通知時刻オフセット(分)
+    @param mention: メンション指定(optional)
+    @param type:    メッセージタイプ(optional)
     @return None
     """
     # 通知メッセージ作成
     msg = '【通知】このチャンネルをレイド通知対象に設定しました'
     # オフセット
-    offset_list = sorted(set([i for i in map(int, findall(r'-?\d+', offset)) if -120 <= i <= 120]), reverse=True)
+    offset_list = sorted(set([i for i in map(int, findall(r'-?\d+', offset)) if -60 <= i <= 120]), reverse=True)
     msg += '\nオフセット:' 
     if not offset_list:
         offset_list = [0]
@@ -91,39 +91,38 @@ async def set_raid_notification(
         else:      # オフセットの値が非負
             msg += f' {o}分前'
 
-    # 通知ロール
+    # メンション
     role_list = list(set(findall(r'<@.*?>|@here|@everyone', mention)))
+    set_role = ' '.join(role_list)
     msg += '\nメンション:'
     if not role_list:
-        set_role = ''
         msg += ' なし'
     else:
-        set_role = ' '.join(role_list)
         msg += f' {set_role}'
 
     # メッセージタイプ
     msg += '\nメッセージタイプ: '
 
     if not any(type == nm.val for nm in RaidNotifyMsg):  # 選択したメッセージタイプがない場合
-        type = 0    # メッセージタイプを0に設定
-        msg += '不正な値 - タイプ0に設定 > '
+        type = 0    # メッセージタイプを0に再設定
+        msg += '不正な値 - タイプ0に設定 > \n'
     
     tgt_nm = RaidNotifyMsg.get_from_val(type)
     msg += f'{tgt_nm.jp_name}\n例: {tgt_nm.msg}'
 
-    # 新規辞書を作成 offset: int, here: bool, role: str, type: int
-    new_dict = {(ctx.guild_id, ctx.channel_id): {'offset': offset_list, 'role': set_role, 'type': type}}
-    g_client.raid.notify_ch_dict.update(new_dict)
+    # 新規辞書を作成
+    upd_dict = {(ctx.guild_id, ctx.channel_id): {'offset': offset_list, 'role': set_role, 'type': type}}
+    g_client.raid.notify_ch_dict.update(upd_dict)
 
     dump_pickle(g_client.raid.pickle_path, g_client.raid.notify_ch_dict)    # 辞書を.pickleに保存
-    g_client.raid.update_time_dict(dt.now(jst), new_dict)
+    g_client.raid.update_dt_dict(dt.now(jst), overwrite=True)             # 通知日時辞書を更新
 
     await ctx.response.send_message(msg, silent=True)
 
 @g_client.tree.command()
 async def unset_raid_notification(ctx: Interaction) -> None:
     """! レイド通知解除関数
-    本コマンドを実行したチャンネルをレイド通知対象から削除
+    本コマンドを実行したチャンネルをレイド通知対象から解除
     @param None
     @return None
     """
@@ -131,7 +130,7 @@ async def unset_raid_notification(ctx: Interaction) -> None:
         await ctx.response.send_message('【通知】このチャンネルはレイド通知対象に入っていません', silent=True)
     else:   # 辞書に入っている場合
         await ctx.response.send_message('【通知】このチャンネルをレイド通知対象から解除しました', silent=True) 
-        g_client.raid.notify_dt_dict.pop((ctx.guild_id, ctx.channel_id), None)      # レイド時報辞書から該当データを削除
+        g_client.raid.notify_dt_dict.pop((ctx.guild_id, ctx.channel_id), None)      # レイド通知日時辞書から該当データを削除
     dump_pickle(g_client.raid.pickle_path, g_client.raid.notify_ch_dict)            # 辞書を.pickleに保存
 
 @g_client.tree.command()
@@ -141,11 +140,11 @@ async def set_clock_notification(
     mention: str = '',
     type: d_Range[int, 0] = 0,
     ) -> None:
-    """! レグナス時計通知追加関数
-    本コマンドを実行したチャンネルをレグナス時計通知対象として追加. メンション先ロール指定があった場合は、通知時に指定ロールにメンションする
+    """! レグナス時計通知チャンネル追加コマンド
+    本コマンドを実行したチャンネルをレグナス時計通知対象として追加。メンション指定があった場合、通知時にメンションする
     @param offset: 通知時刻オフセット(分)
-    @param role: 通知時のメンション先(optional)
-    @param type: 通知時のメッセージタイプ(optional)
+    @param role: メンション指定(optional)
+    @param type: メッセージタイプ(optional)
     @return None
     """
     # 通知メッセージ作成
@@ -161,7 +160,7 @@ async def set_clock_notification(
         else:      # オフセットの値が非負
             msg += f' {o}分前'
 
-    # 通知ロール
+    # メンション
     role_list = list(set(findall(r'<@.*?>|@here|@everyone', mention)))
     set_role = ' '.join(role_list)
     msg += '\nメンション:'
@@ -174,34 +173,34 @@ async def set_clock_notification(
     msg += '\nメッセージタイプ: '
 
     if not any(type == nm.val for nm in ClockNotifyMsg):  # 選択したメッセージタイプがない場合
-        type = 0    # メッセージタイプを0に設定
-        msg += '不正な値 - タイプ0に設定 > '
+        type = 0    # メッセージタイプを0に再設定
+        msg += '不正な値 - タイプ0に設定 > \n'
     
     tgt_nm = ClockNotifyMsg.get_from_val(type)
     msg += f'{tgt_nm.jp_name}\n例: {tgt_nm.day_msg}'
 
-    # 新規辞書を作成 offset: int, here: bool, role: str, type: int
-    new_dict = {(ctx.guild_id, ctx.channel_id): {'offset': offset_list, 'role': set_role, 'type': type}}
-    g_client.clock.notify_ch_dict.update(new_dict)
+    # 新規辞書を作成
+    upd_dict = {(ctx.guild_id, ctx.channel_id): {'offset': offset_list, 'role': set_role, 'type': type}}
+    g_client.clock.notify_ch_dict.update(upd_dict)
 
     dump_pickle(g_client.clock.pickle_path, g_client.clock.notify_ch_dict)    # 通知チャンネル辞書を.pickleに保存
     if g_client.clock.last_period != RegnasTimePeriod.Unset:    # 時間帯が未設定でない場合
-        g_client.clock.update_dt_dict(dt.now(jst), replace=True)  # 通知日時辞書を更新
+        g_client.clock.update_dt_dict(dt.now(jst), overwrite=True)  # 通知日時辞書を更新
 
     await ctx.response.send_message(msg, silent=True)
 
 @g_client.tree.command()
 async def unset_clock_notification(ctx: Interaction) -> None:
     """! レグナス時計通知解除関数
-    本コマンドを実行したチャンネルをレグナス時計通知対象から削除
+    本コマンドを実行したチャンネルをレグナス時計通知対象から解除
     @param None
     @return None
     """
-    if g_client.clock.notify_ch_dict.pop((ctx.guild_id, ctx.channel_id), None) is None:  # 辞書に入っていない場合
+    if g_client.clock.notify_ch_dict.pop((ctx.guild_id, ctx.channel_id), None) is None:     # 辞書に入っていない場合
         await ctx.response.send_message('【通知】このチャンネルはレグナス時刻通知対象に入っていません', silent=True)
-    else:   # 辞書に入っている場合
+    else:                                                                                   # 辞書に入っている場合
         await ctx.response.send_message('【通知】このチャンネルをレグナス時計通知対象から解除しました', silent=True) 
-        g_client.clock.notify_dt_dict.pop((ctx.guild_id, ctx.channel_id), None)    # レイド時報辞書から該当データを削除
-    dump_pickle(g_client.clock.pickle_path, g_client.clock.notify_ch_dict)    # 辞書を.pickleに保存
+        g_client.clock.notify_dt_dict.pop((ctx.guild_id, ctx.channel_id), None)     # レグナス時計通知日時辞書から該当データを削除
+    dump_pickle(g_client.clock.pickle_path, g_client.clock.notify_ch_dict)          # 辞書を.pickleに保存
 
-g_client.run(token=getenv('Token'))
+g_client.run(token=getenv('Token')) # Botクライアント実行
