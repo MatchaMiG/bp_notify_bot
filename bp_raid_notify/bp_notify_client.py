@@ -204,5 +204,4 @@ async def unset_clock_notification(ctx: Interaction) -> None:
         g_client.clock.notify_dt_dict.pop((ctx.guild_id, ctx.channel_id), None)    # レイド時報辞書から該当データを削除
     dump_pickle(g_client.clock.pickle_path, g_client.clock.notify_ch_dict)    # 辞書を.pickleに保存
 
-
 g_client.run(token=getenv('Token'))
