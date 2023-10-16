@@ -3,7 +3,6 @@ Blue Protocol通知Bot向け_レイド通知モジュール
 @note created by https://twitter.com/MatchaMiG
 @date 2023.10.14
 """
-from .bp_notify_client import *
 from .my_lib.ctrl_pickle import *
 from .my_lib.day_of_week import DayOfWeek as DoW
 
@@ -15,11 +14,9 @@ from datetime import datetime as dt
 from datetime import timedelta, time
 from enum import Enum
 from os import getenv
-from typing import List, Union, Any
 from zoneinfo import ZoneInfo
 
 jst = ZoneInfo('Asia/Tokyo')
-
 
 class RaidInfo (Enum):
     """! レイド情報列挙型クラス
@@ -45,7 +42,7 @@ class RaidInfo (Enum):
         self.mission_name = mission_name
         self.portal = portal
 
-class NotifyMsg (Enum):
+class RaidNotifyMsg (Enum):
     """! 時報通知メッセージ列挙型クラス
     """
     Simple = (0, "シンプル", "レイド開催")
@@ -101,10 +98,10 @@ class BPRaidNotify:
         self.pickle_path = getenv('RaidNotifyCh')
         self.notify_ch_dict = load_pickle(self.pickle_path, dict())
         self.last_dict_updated = dt.now(jst)
-        self.notify_time_dict = dict()
+        self.notify_dt_dict = dict()
         self.update_time_dict(self.last_dict_updated, self.notify_ch_dict)
 
-    def update_time_dict(self, dt_: dt, cond_dict:dict) -> None:
+    def update_time_dict(self, dt_: dt, cond_dict: dict) -> None:
         """! 時報辞書更新関数
         @param datetime: 日時
         @param cond_dict: 通知条件辞書
@@ -123,10 +120,10 @@ class BPRaidNotify:
             # 以下の辞書を作成
             # キー: 'サーバID'と'チャンネルID'
             # 値: 'オフセットを考慮した通知日時リスト', 'here通知設定', 'メンション先ロールID', 'メッセージタイプ'
-            new_ts_list = [ts for o in d_v['offset'] for ts in map(lambda x: x - timedelta(minutes=int(o)), ts_list) if ts > dt_]
+            new_ts_list = return_dict[d_k]['ts_list'].extend([ts for o in d_v['offset'] for ts in map(lambda x: x - timedelta(minutes=int(o)), ts_list) if ts > dt_])
             return_dict[d_k] = {'ts_list': new_ts_list, 'role': d_v['role'], 'type': d_v['type']}
 
-        self.notify_time_dict.update(return_dict)
+        self.notify_dt_dict.update(return_dict)
 
     async def send_notification(self, dt_: dt, ts_dict: dict) -> None:
         """! 時報送信関数
@@ -144,7 +141,7 @@ class BPRaidNotify:
                 msg_type = int(d_v['type'])
                 #if d_v['role'] is not None: # メンション指定がある場合
                 msg = d_v['role']      # メッセージにメンションを追加
-                msg += '\n【時報】' + NotifyMsg.get_from_val(msg_type).msg + '\n'    # 時報メッセージ追加
+                msg += '\n【時報】' + RaidNotifyMsg.get_from_val(msg_type).msg + '\n'    # 時報メッセージ追加
 
                 # レイド情報追加
                 for ri in raid_info_list:
@@ -154,7 +151,7 @@ class BPRaidNotify:
 
                 ts_dict[d_k]['ts_list'] = [d for d in d_v['ts_list'] if dt_ < d]    # 日時リストを更新(通知済みの要素を除外)
 
-    @tasks.loop(seconds=10)
+    @tasks.loop(seconds=30)
     async def measure_time(self) -> None:
         """! 時刻計測関数
         30秒ごとに時刻を計測し、各時報処理関数を呼び出す.
@@ -166,7 +163,7 @@ class BPRaidNotify:
             self.update_time_dict(now_, self.notify_ch_dict)    # レイド時報リスト更新
             self.last_dict_updated = now_                       # 時報リスト更新日時の更新
         
-        await self.send_notification(now_, self.notify_time_dict)
+        await self.send_notification(now_, self.notify_dt_dict)
         
     @measure_time.before_loop
     async def time_set(self) -> None:
@@ -178,21 +175,3 @@ class BPRaidNotify:
         # mm:00に開始するための時刻合わせ
         wait_time = 60.0 - dt.now(jst).second   # 時刻合わせ計算
         await sleep_async(wait_time)            # 時刻合わせ待機
-
-
-# async def calc_Regnas_time(dt_:dt) -> None:
-#     """! レグナス時間計算関数
-#     現在の昼/夜を判定し、その時間帯の残り時間を算出する.これらの結果をbotのステータスに表示する.
-#     @param dt_: 判定する時刻
-#     @return None
-#     @note 基準時刻は環境変数から取得
-#     """
-#     Regnas_basetime = int(getenv('RegnasBaseTime', 1340))
-#     Regnas_totalsec = int(dt_.replace(tzinfo=jst).timestamp() - Regnas_basetime) % 3000  # 現在の日の時刻(累計秒)を取得
-#     m, s = divmod(int(1500-Regnas_totalsec % 1500), 60) # 残り時間(分, 秒)を算出
-#     if Regnas_totalsec < 1500:  # 昼
-#         act = Game(name=f'\N{High Brightness Symbol}昼\N{High Brightness Symbol} 残{m:02}:{s:02}')
-#     else:                       # 夜
-#         act = Game(name=f'\N{White Medium Star}夜\N{White Medium Star} 残{m:02}:{s:02}')
-#     global g_client
-#     await g_client.change_presence(activity=act)
