@@ -170,11 +170,11 @@ class RegnasClock:
         start_dt = calc_dt - timedelta(seconds=elapsed_secs)        # 現在の時間帯の開始日時
         end_dt = calc_dt + timedelta(seconds=1500 - elapsed_secs)   # 現在の時間帯の終了日時
 
-        if start_dt.time() < time(hour=9) < end_dt.time():  # 現在の時間帯が 午前9時(JST) を跨ぐ場合
-            if time(hour=9) < calc_dt.time():               # 算出時刻が 午前9時(JST) 前の場合
-                end_dt - timedelta(seconds=600)             # 終了日時を 600秒 = 10分 短縮
+        if start_dt.time() < time(hour=9, tzinfo=jst) < end_dt.time():  # 現在の時間帯が 午前9時(JST) を跨ぐ場合
+            if time(hour=9, tzinfo=jst) < calc_dt.time():   # 算出時刻が 午前9時(JST) を過ぎた場合
+                start_dt += timedelta(seconds=600)           # 開始日時を 600秒 = 10分 遅らせる
             else:                                           # 算出時刻が 午前9時(JST) 以降の場合
-                start_dt + timedelta(seconds=600)           # 開始日時を 600秒 = 10分 延長
+                end_dt -= timedelta(seconds=600)             # 終了日時を 600秒 = 10分 短縮
 
         return now_period, start_dt, end_dt     # 時間帯/開始日時/終了日時 を返戻
 

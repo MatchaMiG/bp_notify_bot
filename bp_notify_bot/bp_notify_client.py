@@ -65,6 +65,10 @@ class BPNotifyClient(d_Client):
 g_client = BPNotifyClient(intents=Intents.default())    # Discord botクライアントインスタンス生成
 
 @g_client.tree.command()
+async def help(ctx: Interaction) -> None:
+    await ctx.response.send_message('')
+
+@g_client.tree.command()
 async def set_raid_notification(
     ctx: Interaction,
     offset: str,
