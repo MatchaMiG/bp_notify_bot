@@ -161,7 +161,7 @@ class BPRaidNotify:
 
                 msg_type = int(d_v['type'])     # メッセージタイプを取得
                 
-                msg += '\N{Crossed Swords}【通知】' + RaidNotifyMsg.get_from_val(msg_type).msg + '\n'    # 通知メッセージ追加
+                msg += '【通知】' + RaidNotifyMsg.get_from_val(msg_type).msg + '\n'    # 通知メッセージ追加
 
                 # レイド情報追加
                 for ri in raid_info_list:   # 開催中のレイドリストを順番に処理

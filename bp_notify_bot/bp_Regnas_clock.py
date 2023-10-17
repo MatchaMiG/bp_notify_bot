@@ -132,9 +132,9 @@ class RegnasClock:
                 msg_type = int(d_v['type'])     # メッセージタイプを取得
 
                 if self.last_period == RegnasTimePeriod.Night:  # 現在夜 → 次は昼
-                    msg += '\N{Alarm Clock}【通知】' + ClockNotifyMsg.get_from_val(msg_type).day_msg     # 昼切替の通知メッセージ追加
+                    msg += '【通知】' + ClockNotifyMsg.get_from_val(msg_type).day_msg     # 昼切替の通知メッセージ追加
                 elif self.last_period == RegnasTimePeriod.Day:  # 現在昼 → 次は夜
-                    msg += '\N{Alarm Clock}【通知】' + ClockNotifyMsg.get_from_val(msg_type).night_msg   # 夜切替の通知メッセージ追加
+                    msg += '【通知】' + ClockNotifyMsg.get_from_val(msg_type).night_msg   # 夜切替の通知メッセージ追加
 
                 # 通知送信
                 await ch.send(msg)
