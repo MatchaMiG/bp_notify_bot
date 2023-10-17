@@ -66,7 +66,7 @@ g_client = BPNotifyClient(intents=Intents.default())    # Discord botクライ�
 
 @g_client.tree.command()
 async def help(ctx: Interaction) -> None:
-    await ctx.response.send_message('')
+    await ctx.response.send_message('https://github.com/MatchaMiG/bp_notify_bot/blob/main/Readme.md')
 
 @g_client.tree.command()
 async def set_raid_notification(
