@@ -115,11 +115,11 @@ class BPRaidNotify:
         """
         # 通知日時リスト作成
         dow = upd_dt.weekday() # 曜日取得
-        ts_list = [dt.combine(upd_dt.date(), v[1], tzinfo=jst) for v in RaidSchedule().values() if dow in v[0]] # 時報日時リスト作成
+        scd_list = [dt.combine(upd_dt.date(), v[1], tzinfo=jst) for v in RaidSchedule().values() if dow in v[0]]    # レイドスケジュールリスト作成
         
-        tommorow_1st_time = min([v[1] for v in RaidSchedule().values() if ((dow + 1) % 7) in v[0]])             # 翌日最初の時報時刻を取得
-        tommorow_1st_ts = dt.combine(upd_dt.date(), tommorow_1st_time, tzinfo=jst) + timedelta(days=1)          # 翌日最初の時報日時を取得
-        ts_list.append(tommorow_1st_ts)                                                                         # 通知日時リストに翌日最初の通知日時を追加
+        tommorow_1st_time = min([v[1] for v in RaidSchedule().values() if ((dow + 1) % 7) in v[0]])                 # 翌日最初の時報時刻を取得
+        tommorow_1st_ts = dt.combine(upd_dt.date(), tommorow_1st_time, tzinfo=jst) + timedelta(days=1)              # 翌日最初の時報日時を取得
+        scd_list.append(tommorow_1st_ts)                                                                            # 通知日時リストに翌日最初の通知日時を追加
 
         # 通知日時辞書の更新
         upd_dict = dict()   # 更新辞書
@@ -135,7 +135,7 @@ class BPRaidNotify:
                 # チャンネル辞書または通知日時リストが未生成の場合は空リストを取得
                 ts_list = self.notify_dt_dict.get(d_k, dict()).get('ts_list', list())
             # 既存通知日時リスト(または空リスト)に新規通知日時リストを連結
-            ts_list.extend([ts for o in d_v['offset'] for ts in map(lambda x: x - timedelta(minutes=int(o)), ts_list) if upd_dt < ts])
+            ts_list.extend([ts for o in d_v['offset'] for ts in map(lambda x: x - timedelta(minutes=int(o)), scd_list) if upd_dt < ts])
             # 更新辞書に各値を設定
             upd_dict[d_k] = {'ts_list': ts_list, 'role': d_v['role'], 'type': d_v['type']}
 
