@@ -3,4 +3,4 @@
 @date 2023.10.04
 """
 if __name__== '__main__':
-    from . import bp_raid_notify    # 起動
+    from . import bp_notify_client    # 起動

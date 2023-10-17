@@ -183,7 +183,7 @@ class BPRaidNotify:
         await self.send_notification(now_dt)    # 通知送信
 
         if self.last_dict_updated.date() < now_dt.date():   # 通知日時辞書の最新更新日時が、現在日時の日付以前の場合
-            self.update_dt_dict(now_dt)       # 通知日時辞書を更新
+            self.update_dt_dict(now_dt)         # 通知日時辞書を更新
             self.last_dict_updated = now_dt     # 通知日時辞書の最新更新日時を現在日時に設定
         
         
