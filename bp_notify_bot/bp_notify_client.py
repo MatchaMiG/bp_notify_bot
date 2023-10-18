@@ -66,7 +66,10 @@ g_client = BPNotifyClient(intents=Intents.default())    # Discord botクライ�
 
 @g_client.tree.command()
 async def help(ctx: Interaction) -> None:
-    await ctx.response.send_message('[__GitHub - Readme__](https://github.com/MatchaMiG/bp_notify_bot/blob/main/Readme.md)を参照してください。')
+    try:
+        await ctx.response.send_message('[__GitHub - Readme__](https://github.com/MatchaMiG/bp_notify_bot/blob/main/Readme.md)を参照してください。')
+    except:
+        pass
 
 @g_client.tree.command()
 async def set_raid_notification(
@@ -121,7 +124,10 @@ async def set_raid_notification(
     dump_pickle(g_client.raid.pickle_path, g_client.raid.notify_ch_dict)    # 辞書を.pickleに保存
     g_client.raid.update_dt_dict(dt.now(jst), overwrite=True)             # 通知日時辞書を更新
 
-    await ctx.response.send_message(msg, silent=True)
+    try:
+        await ctx.response.send_message(msg, silent=True)
+    except:
+        pass
 
 @g_client.tree.command()
 async def unset_raid_notification(ctx: Interaction) -> None:
@@ -131,10 +137,16 @@ async def unset_raid_notification(ctx: Interaction) -> None:
     @return None
     """
     if g_client.raid.notify_ch_dict.pop((ctx.guild_id, ctx.channel_id), None) is None:  # 辞書に入っていない場合
-        await ctx.response.send_message('【通知】このチャンネルはレイド通知対象に入っていません', silent=True)
+        try:
+            await ctx.response.send_message('【通知】このチャンネルはレイド通知対象に入っていません', silent=True)
+        except:
+            pass
     else:   # 辞書に入っている場合
-        await ctx.response.send_message('【通知】このチャンネルをレイド通知対象から解除しました', silent=True) 
-        g_client.raid.notify_dt_dict.pop((ctx.guild_id, ctx.channel_id), None)      # レイド通知日時辞書から該当データを削除
+        try:
+            await ctx.response.send_message('【通知】このチャンネルをレイド通知対象から解除しました', silent=True) 
+            g_client.raid.notify_dt_dict.pop((ctx.guild_id, ctx.channel_id), None)      # レイド通知日時辞書から該当データを削除
+        except:
+            pass
     dump_pickle(g_client.raid.pickle_path, g_client.raid.notify_ch_dict)            # 辞書を.pickleに保存
 
 @g_client.tree.command()
@@ -191,7 +203,10 @@ async def set_clock_notification(
     if g_client.clock.last_period != RegnasTimePeriod.Unset:    # 時間帯が未設定でない場合
         g_client.clock.update_dt_dict(dt.now(jst), overwrite=True)  # 通知日時辞書を更新
 
-    await ctx.response.send_message(msg, silent=True)
+    try:
+        await ctx.response.send_message(msg, silent=True)
+    except:
+        pass
 
 @g_client.tree.command()
 async def unset_clock_notification(ctx: Interaction) -> None:
@@ -201,10 +216,16 @@ async def unset_clock_notification(ctx: Interaction) -> None:
     @return None
     """
     if g_client.clock.notify_ch_dict.pop((ctx.guild_id, ctx.channel_id), None) is None:     # 辞書に入っていない場合
-        await ctx.response.send_message('【通知】このチャンネルはレグナス時刻通知対象に入っていません', silent=True)
+        try:
+            await ctx.response.send_message('【通知】このチャンネルはレグナス時刻通知対象に入っていません', silent=True)
+        except:
+            pass
     else:                                                                                   # 辞書に入っている場合
-        await ctx.response.send_message('【通知】このチャンネルをレグナス時計通知対象から解除しました', silent=True) 
-        g_client.clock.notify_dt_dict.pop((ctx.guild_id, ctx.channel_id), None)     # レグナス時計通知日時辞書から該当データを削除
+        try:
+            await ctx.response.send_message('【通知】このチャンネルをレグナス時計通知対象から解除しました', silent=True)
+            g_client.clock.notify_dt_dict.pop((ctx.guild_id, ctx.channel_id), None)     # レグナス時計通知日時辞書から該当データを削除
+        except:
+            pass
     dump_pickle(g_client.clock.pickle_path, g_client.clock.notify_ch_dict)          # 辞書を.pickleに保存
 
 g_client.run(token=getenv('Token')) # Botクライアント実行

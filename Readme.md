@@ -10,7 +10,7 @@
     | 環境変数名 | 値 | 備考 |
     |:--|:--|:--|
     | Token | Botのトークン | [Discord Developer Portal](https://discord.com/developers/applications/) にて取得可能 |
-    | RaidNotify | レイド通知チャンネル設定を保存するファイルのパス | 拡張子は .pickle |
+    | RaidNotifyCh | レイド通知チャンネル設定を保存するファイルのパス | 拡張子は .pickle |
     | RegnasClockNotifyCh | レグナス時計通知チャンネル設定を保存するファイルのパス | 拡張子は .pickle |
     | NowRaid | 開催中のレイドミッション名 | 区切り文字は「, (カンマ)」でスペースは無視される |
 2. 【補足】 [Discord Developer Portal](https://discord.com/developers/applications/)

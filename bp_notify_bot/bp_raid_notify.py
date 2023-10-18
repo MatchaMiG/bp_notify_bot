@@ -168,8 +168,10 @@ class BPRaidNotify:
                     msg += f'\n【{ri.mission_name}】\n{ri.portal}'  # 開催中のレイド情報をメッセージに追加
 
                 # 通知送信
-                await ch.send(msg)
-
+                try:
+                    await ch.send(msg)
+                except:
+                    pass
                 self.notify_dt_dict[d_k]['ts_list'] = [d for d in d_v['ts_list'] if snd_dt < d]    # 通知日時リストを更新(通知済みの要素を除外)
 
     @tasks.loop(seconds=15)

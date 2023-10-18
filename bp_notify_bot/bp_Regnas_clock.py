@@ -137,8 +137,10 @@ class RegnasClock:
                     msg += '【通知】' + ClockNotifyMsg.get_from_val(msg_type).night_msg   # 夜切替の通知メッセージ追加
 
                 # 通知送信
-                await ch.send(msg)
-
+                try:
+                    await ch.send(msg)
+                except:
+                    pass
                 self.notify_dt_dict[d_k]['ts_list'] = [d for d in d_v['ts_list'] if snd_dt < d]    # 通知日時リストを更新(通知済みの要素を除外)
 
     def get_Regnas_basetime(self, calc_dt: dt) -> int:
