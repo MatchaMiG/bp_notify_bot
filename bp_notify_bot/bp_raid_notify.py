@@ -30,7 +30,7 @@ class RaidInfo (Enum):
     FrostDemiDragon = ('虚空の浮島・氷竜襲来', 'バハマール高原・神の見守る丘')
     EarthDemiDragon = ('虚空の浮島・土竜襲来', 'バハマール高原・神の見守る丘')
     ThunderDemiDragon = ('虚空の浮島・雷竜襲来', 'モンテノール渓谷・リッツェ交易街道')
-    #OriginDemiDragon = ('虚空の浮島・原竜襲来', '未確認')
+    OriginDemiDragon = ('虚空の浮島・原竜襲来', 'バハマール高原・神の見守る丘')
     
     ## 〇蟲
     SandWarm = ('騒嵐の大地・砂蟲侵出', 'エバーグリーン砂漠・帰らずの砂塵')
