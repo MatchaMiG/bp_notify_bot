@@ -35,10 +35,13 @@ class RaidInfo (Enum):
     ## 〇蟲
     SandWarm = ('騒嵐の大地・砂蟲侵出', 'エバーグリーン砂漠・帰らずの砂塵')
     
+    ## 防衛戦
+    AsterleedsDefenceBattle = ('アステルリーズ防衛戦', '海鳴りの草原')
+
     def __init__(self, mission_name: str, portal: str) -> None:
         """! レイド情報列挙型クラスのコンストラクタ
         @param mission_name: ミッション名
-        @param portal: 星脈孔情報
+        @param portal: 参加地点情報
         @return None
         """
         super().__init__()
