@@ -34,6 +34,7 @@ class RaidInfo (Enum):
     
     ## 〇蟲
     SandWarm = ('騒嵐の大地・砂蟲侵出', 'エバーグリーン砂漠・帰らずの砂塵')
+    FrostWarm = ('騒嵐の大地・氷蟲侵出', 'エバーグリーン砂漠・帰らずの砂塵')
     
     ## 防衛戦
     AsterleedsDefenceBattle = ('アステルリーズ防衛戦', '海鳴りの草原')
