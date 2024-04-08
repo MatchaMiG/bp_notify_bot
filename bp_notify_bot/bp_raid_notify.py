@@ -28,6 +28,7 @@ class RaidInfo (Enum):
     ## 〇竜
     FlareDemiDragon = ('虚空の浮島・炎竜襲来', 'モンテノール渓谷・リッツェ交易街道')
     FrostDemiDragon = ('虚空の浮島・氷竜襲来', 'バハマール高原・神の見守る丘')
+    FrostDemiDragon2 = ('虚空の浮島・氷竜襲来2', 'モンテノール渓谷・リッツェ交易街道')
     EarthDemiDragon = ('虚空の浮島・土竜襲来', 'バハマール高原・神の見守る丘')
     ThunderDemiDragon = ('虚空の浮島・雷竜襲来', 'モンテノール渓谷・リッツェ交易街道')
     OriginDemiDragon = ('虚空の浮島・原竜襲来', 'バハマール高原・神の見守る丘')
@@ -38,6 +39,7 @@ class RaidInfo (Enum):
     
     ## 防衛戦
     AsterleedsDefenceBattle = ('アステルリーズ防衛戦', '海鳴りの草原')
+    AsterleedsDefenceBattle2 = ('アステルリーズ防衛戦2', '海鳴りの草原')
 
     def __init__(self, mission_name: str, portal: str) -> None:
         """! レイド情報列挙型クラスのコンストラクタ
