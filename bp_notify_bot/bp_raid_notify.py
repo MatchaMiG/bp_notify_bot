@@ -40,6 +40,7 @@ class RaidInfo (Enum):
     ## 防衛戦
     AsterleedsDefenceBattle = ('アステルリーズ防衛戦', '海鳴りの草原')
     AsterleedsDefenceBattle2 = ('アステルリーズ防衛戦2', '海鳴りの草原')
+    AsterleedsDefenceBattle3 = ('アステルリーズ防衛戦3', '海鳴りの草原')
 
     def __init__(self, mission_name: str, portal: str) -> None:
         """! レイド情報列挙型クラスのコンストラクタ
