@@ -72,11 +72,11 @@ class RegnasClock:
         self.notify_dt_dict = dict()                                # 通知日時辞書
 
     @property
-    def Regnas_basetime_list(self) -> list():
+    def Regnas_basetime(self) -> int:
         """! レグナス基準時刻のリスト
         レグナス時刻の基準時刻のリストを格納するプロパティ変数(Readonly)
         """
-        return [2530, 1930, 1330, 730, 130] # 毎日600秒ずつズレるのをリスト化
+        return 130
 
     @property
     def Regnas_service_start_dt(self) -> dt:
@@ -159,8 +159,7 @@ class RegnasClock:
         @return 現在の時間帯, 開始日時, 終了日時
         @note 基準時刻は環境変数から取得
         """
-        Regnas_basetime = self.get_Regnas_basetime(calc_dt)                     # 算出日時の基準時刻を取得
-        Regnas_totalsec = int(calc_dt.timestamp() - Regnas_basetime) % 3000     # 算出日時のレグナス時刻(累計秒)を算出
+        Regnas_totalsec = int(calc_dt.timestamp() - self.Regnas_basetime) % 3000     # 算出日時のレグナス時刻(累計秒)を算出
 
         # 現在の昼夜を判定
         if Regnas_totalsec < 1500:
