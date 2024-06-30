@@ -27,7 +27,7 @@ class RaidInfo (Enum):
     # 期間限定
     ## 〇竜
     FlareDemiDragon = ('虚空の浮島・炎竜襲来', 'モンテノール渓谷・リッツェ交易街道')
-    FlareDemiDragon = ('虚空の浮島・炎竜襲来2', 'バハマール高原・神の見守る丘')
+    FlareDemiDragon2 = ('虚空の浮島・炎竜襲来2', 'バハマール高原・神の見守る丘')
     FrostDemiDragon = ('虚空の浮島・氷竜襲来', 'バハマール高原・神の見守る丘')
     FrostDemiDragon2 = ('虚空の浮島・氷竜襲来2', 'モンテノール渓谷・リッツェ交易街道')
     EarthDemiDragon = ('虚空の浮島・土竜襲来', 'バハマール高原・神の見守る丘')
