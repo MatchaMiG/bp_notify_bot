@@ -76,7 +76,7 @@ class RegnasClock:
         """! レグナス基準時刻のリスト
         レグナス時刻の基準時刻のリストを格納するプロパティ変数(Readonly)
         """
-        return 130
+        return 1630
 
     @property
     def Regnas_service_start_dt(self) -> dt:
