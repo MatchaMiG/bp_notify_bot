@@ -32,6 +32,7 @@ class RaidInfo (Enum):
     FrostDemiDragon2 = ('虚空の浮島・氷竜襲来2', 'モンテノール渓谷・リッツェ交易街道')
     EarthDemiDragon = ('虚空の浮島・土竜襲来', 'バハマール高原・神の見守る丘')
     ThunderDemiDragon = ('虚空の浮島・雷竜襲来', 'モンテノール渓谷・リッツェ交易街道')
+    ThunderDemiDragon2 = ('虚空の浮島・雷竜襲来2', 'モンテノール渓谷・リッツェ交易街道')
     OriginDemiDragon = ('虚空の浮島・原竜襲来', 'バハマール高原・神の見守る丘')
     
     ## 〇蟲
