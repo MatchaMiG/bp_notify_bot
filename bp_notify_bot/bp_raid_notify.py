@@ -47,6 +47,9 @@ class RaidInfo (Enum):
     AsterleedsDefenceBattle2 = ('アステルリーズ防衛戦2', '海鳴りの草原')
     AsterleedsDefenceBattle3 = ('アステルリーズ防衛戦3', '海鳴りの草原')
 
+    # 深淵の骸野
+    Abyss1 = ('深淵の骸野・狂裂降臨', 'コアニアニ森林・静寂の森')
+
     def __init__(self, mission_name: str, portal: str) -> None:
         """! レイド情報列挙型クラスのコンストラクタ
         @param mission_name: ミッション名
