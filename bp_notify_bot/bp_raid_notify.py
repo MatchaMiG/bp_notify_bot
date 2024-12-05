@@ -49,6 +49,7 @@ class RaidInfo (Enum):
 
     # 深淵の骸野
     Abyss1 = ('深淵の骸野・狂裂降臨', 'コアニアニ森林・静寂の森')
+    Abyss2 = ('深淵の骸野・氷裂降臨', 'コアニアニ森林・命樹の零域')
 
     def __init__(self, mission_name: str, portal: str) -> None:
         """! レイド情報列挙型クラスのコンストラクタ
