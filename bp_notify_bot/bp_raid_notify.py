@@ -34,11 +34,13 @@ class RaidInfo (Enum):
     ThunderDemiDragon = ('虚空の浮島・雷竜襲来', 'モンテノール渓谷・リッツェ交易街道')
     ThunderDemiDragon2 = ('虚空の浮島・雷竜襲来2', 'モンテノール渓谷・リッツェ交易街道')
     OriginDemiDragon = ('虚空の浮島・原竜襲来', 'バハマール高原・神の見守る丘')
+    OriginDemiDragon2 = ('虚空の浮島・原竜襲来2', 'バハマール高原・神の見守る丘')
     
     ## 〇蟲
     SandWarm = ('騒嵐の大地・砂蟲侵出', 'エバーグリーン砂漠・帰らずの砂塵')
     SandWarm2 = ('騒嵐の大地・砂蟲侵出2', 'エバーグリーン砂漠・帰らずの砂塵')
     SandWarm3 = ('騒嵐の大地・砂蟲侵出3', 'エバーグリーン砂漠・帰らずの砂塵')
+    SandWarm4 = ('騒嵐の大地・砂蟲侵出4', 'エバーグリーン砂漠・帰らずの砂塵')
     FrostWarm = ('騒嵐の大地・氷蟲侵出', 'エバーグリーン砂漠・帰らずの砂塵')
     FrostWarm2 = ('騒嵐の大地・氷蟲侵出2', 'エバーグリーン砂漠・帰らずの砂塵')
     
@@ -50,6 +52,7 @@ class RaidInfo (Enum):
     # 深淵の骸野
     Abyss1 = ('深淵の骸野・狂裂降臨', 'コアニアニ森林・静寂の森')
     Abyss2 = ('深淵の骸野・氷裂降臨', 'コアニアニ森林・命樹の零域')
+    Abyss3 = ('深淵の骸野・狂裂降臨2', 'コアニアニ森林・静寂の森')
 
     def __init__(self, mission_name: str, portal: str) -> None:
         """! レイド情報列挙型クラスのコンストラクタ
@@ -97,17 +100,17 @@ class RaidSchedule(dict):
     """
     def __init__(self):
         super().__init__(self)
-        # 平日(WeekDay)の14/18/22時からのレイド設定
-        self['wd14'] = [DoW.get_weekday(), time(hour=14, tzinfo=jst)]
-        self['wd18'] = [DoW.get_weekday(), time(hour=18, tzinfo=jst)]
+        # 平日(WeekDay)の20/22/24時からのレイド設定
+        # ※24時のみ特殊な設定
+        self['wd20'] = [DoW.get_weekday(), time(hour=20, tzinfo=jst)]
         self['wd22'] = [DoW.get_weekday(), time(hour=22, tzinfo=jst)]
-        # 週末(WeekEnd)の08/12/16/20/25時からのレイド設定
-        # ※25時のみ特殊な設定
-        self['we08'] = [DoW.get_weekend(), time(hour=8, tzinfo=jst)]
+        self['wd0'] = [[DoW.Tue, DoW.Wed, DoW.Thu, DoW.Fri, DoW.Sat], time(hour=0, tzinfo=jst)]
+        # 週末(WeekEnd)の08/12/16/20/23時からのレイド設定
         self['we12'] = [DoW.get_weekend(), time(hour=12, tzinfo=jst)]
         self['we16'] = [DoW.get_weekend(), time(hour=16, tzinfo=jst)]
+        self['we18'] = [DoW.get_weekend(), time(hour=18, tzinfo=jst)]
         self['we20'] = [DoW.get_weekend(), time(hour=20, tzinfo=jst)]
-        self['we25'] = [[DoW.Sun.val, DoW.Mon.val], time(hour=1, tzinfo=jst)]
+        self['we23'] = [DoW.get_weekend(), time(hour=23, tzinfo=jst)]
 
 class BPRaidNotify:
     """! レイド通知クラス
